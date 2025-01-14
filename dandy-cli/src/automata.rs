@@ -228,16 +228,16 @@ impl Automata {
             (T::Dfa, T::Dfa) => {
                 let dfa1 = self.borrow_dfa().unwrap();
                 let dfa2 = other.borrow_dfa().unwrap();
-                if dfa1.equivalent_to(dfa2) {
-                    if minimized && dfa1.states().len() != dfa2.states().len() {
-                        NotMinimized
-                    } else {
-                        Equivalent
-                    }
-                } else {
-                    NotEquivalent
-                }
-            }
+                match dfa1.separable_from(dfa2) {
+                    None =>
+                        if minimized && dfa1.states().len() != dfa2.states().len() {
+                            NotMinimized
+                        } else {
+                           Equivalent
+                        }
+                    Some(None) => AlphabetMismatch,
+                    Some(Some(s)) => Separated(Some(s))
+                }            }
             (T::Dfa, _) => {
                 warn_minimized!(minimized);
                 let dfa1 = self.borrow_dfa().unwrap();
@@ -245,7 +245,7 @@ impl Automata {
                 if dfa1.equivalent_to(&dfa2) {
                     Equivalent
                 } else {
-                    NotEquivalent
+                    Separated(None)
                 }
             }
             (T::Nfa, _) => {
@@ -255,7 +255,7 @@ impl Automata {
                 if nfa1.equivalent_to(&nfa2) {
                     Equivalent
                 } else {
-                    NotEquivalent
+                    Separated(None)
                 }
             }
             (T::Regex, _) => {
@@ -267,7 +267,7 @@ impl Automata {
                 if dfa1.equivalent_to(&dfa2) {
                     Equivalent
                 } else {
-                    NotEquivalent
+                    Separated(None)
                 }
             }
         }

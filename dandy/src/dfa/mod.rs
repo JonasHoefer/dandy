@@ -930,6 +930,42 @@ impl Dfa {
         true
     }
 
+    pub fn separable_from(&self, other: &Dfa) -> Option<Option<String>> {
+        //if the alphabets are different, they aren't equivalent
+        if !alphabet_equal(&self.alphabet, &other.alphabet) {
+            return Some(None);
+        }
+
+        // initially, we explore the (pair of) initial states
+        let mut evaluators_to_explore = vec![(self.evaluator(), other.evaluator(), String::new())];
+        let mut explored_states = HashSet::new();
+        explored_states.insert((
+            evaluators_to_explore[0].0.current_state_idx(),
+            evaluators_to_explore[0].1.current_state_idx(),
+        ));
+
+        while let Some((s1, s2, w)) = evaluators_to_explore.pop() {
+            // we explore states s1 and s2
+            // they must both be accepting or rejecting
+            if s1.is_accepting() != s2.is_accepting() {
+                return Some(Some(w));
+            }
+            // for each char in alphabet, we step the evaluator. If we get new states, explore them!
+            for elem in self.alphabet.iter() {
+                let mut d1 = s1.clone();
+                d1.step(elem);
+                let mut d2 = s2.clone();
+                d2.step(elem);
+                if explored_states.insert((d1.current_state_idx(), d2.current_state_idx())) {
+                    let mut wa = w.clone();
+                    wa.push_str(elem);
+                    evaluators_to_explore.push((d1, d2, wa));
+                }
+            }
+        }
+        return None;
+    }
+
     /// Gets the alphabet of this DFA
     pub fn alphabet(&self) -> &[Rc<str>] {
         &self.alphabet
